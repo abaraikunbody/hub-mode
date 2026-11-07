@@ -124,5 +124,24 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Aperçu" />
+
+        <TextView
+            style="@style/Section"
+            android:text="5. Journal de diagnostic" />
+
+        <Button
+            android:id="@+id/btn_clear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Effacer le journal" />
+
+        <TextView
+            android:id="@+id/journal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:textIsSelectable="true"
+            android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

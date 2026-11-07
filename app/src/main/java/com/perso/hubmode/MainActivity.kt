@@ -50,6 +50,10 @@ class MainActivity : Activity() {
             save()
             startActivity(Intent(this, PreviewActivity::class.java))
         }
+        findViewById<Button>(R.id.btn_clear).setOnClickListener {
+            Diag.clear()
+            showJournal()
+        }
     }
 
     override fun onResume() {
@@ -57,11 +61,16 @@ class MainActivity : Activity() {
         val ok = MediaWatcher.hasAccess(this)
         mediaStatus.text = if (ok) "✅ Accès autorisé : la musique en cours s'affichera."
         else "❌ Accès non autorisé : Spotify ne s'affichera pas."
+        showJournal()
     }
 
     override fun onPause() {
         save()
         super.onPause()
+    }
+
+    private fun showJournal() {
+        findViewById<TextView>(R.id.journal).text = Diag.read().ifBlank { "(vide)" }
     }
 
     private fun save() {

@@ -20,7 +20,10 @@ class HubDreamService : DreamService() {
     private var quarter: Int? = null
     private var displayManager: DisplayManager? = null
 
-    private val finishIfPortrait = Runnable { finish() }
+    private val finishIfPortrait = Runnable {
+        Diag.log("Arrêt : téléphone détecté en portrait")
+        finish()
+    }
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = Unit
@@ -32,25 +35,41 @@ class HubDreamService : DreamService() {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        Diag.log("Écran de veille : démarrage (rotation écran=${displayRotation()})")
         isInteractive = true          // pour pouvoir toucher les boutons Spotify
         isFullscreen = true
         isScreenBright = !HubController.isNight(this)
         setContentView(R.layout.hub)
 
         rotator = findViewById(R.id.rotator)
-        hub = HubController(this, rotator!!) { finish() }.also { it.start() }
+        hub = HubController(this, rotator!!) {
+            Diag.log("Arrêt : bouton fermer")
+            finish()
+        }.also { it.start() }
 
         displayManager = getSystemService(DisplayManager::class.java)
         displayManager?.registerDisplayListener(displayListener, handler)
 
         orientation = OrientationWatcher(this) { q ->
+            Diag.log("Orientation détectée : " + when (q) { 0 -> "portrait"; 2 -> "portrait inversé"; 1, 3 -> "paysage"; else -> "à plat" })
             quarter = q
             applyRotation()
             checkLandscape()
         }.also { it.start() }
     }
 
+    override fun onDreamingStarted() {
+        super.onDreamingStarted()
+        Diag.log("Écran de veille : affiché")
+    }
+
+    override fun onDreamingStopped() {
+        Diag.log("Écran de veille : arrêté par Android")
+        super.onDreamingStopped()
+    }
+
     override fun onDetachedFromWindow() {
+        Diag.log("Écran de veille : fermé")
         handler.removeCallbacks(finishIfPortrait)
         orientation?.stop()
         displayManager?.unregisterDisplayListener(displayListener)
