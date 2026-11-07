@@ -11,8 +11,8 @@ android {
         applicationId = "com.perso.hubmode"
         minSdk = 29
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "2.0"
     }
 
     // Clé de signature fixe : permet d'installer les mises à jour par-dessus l'ancienne version.

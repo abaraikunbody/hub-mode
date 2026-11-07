@@ -24,23 +24,36 @@
             android:alpha="0.7"
             android:text="Heure, date, Spotify et cours de bourse quand le téléphone est en charge et à l'horizontale." />
 
-        <!-- 1. Écran de veille -->
+        <!-- 1. Activation -->
         <TextView
             style="@style/Section"
-            android:text="1. Activer l'écran de veille" />
+            android:text="1. Activer Hub Mode" />
 
         <TextView
+            android:id="@+id/overlay_status"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:alpha="0.7"
-            android:text="Choisis « Hub Mode » comme écran de veille, puis règle « Quand démarrer » sur « Pendant la charge »." />
+            android:layout_height="wrap_content" />
 
         <Button
-            android:id="@+id/btn_dream"
+            android:id="@+id/btn_overlay"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Ouvrir les réglages d'écran de veille" />
+            android:text="Autoriser « par-dessus les autres applis »" />
+
+        <Switch
+            android:id="@+id/service_on"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Hub Mode activé (en charge + couché + verrouillé)" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:alpha="0.7"
+            android:text="Sur le Hub : ✕ pour revenir à l'écran de verrouillage, balayer vers le haut pour déverrouiller. Pense à désactiver l'économiseur d'écran d'Android." />
 
         <!-- 2. Spotify -->
         <TextView
@@ -99,16 +112,9 @@
             android:text="4. Options" />
 
         <Switch
-            android:id="@+id/landscape_only"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Seulement quand le téléphone est à l'horizontale (sinon l'écran s'éteint normalement)" />
-
-        <Switch
             android:id="@+id/night_dim"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:text="Atténuer l'affichage la nuit (22h – 7h)" />
 
         <Button

@@ -18,7 +18,8 @@ import android.widget.Toast
 class MainActivity : Activity() {
 
     private lateinit var tickers: EditText
-    private lateinit var landscapeOnly: Switch
+    private lateinit var serviceOn: Switch
+    private lateinit var overlayStatus: TextView
     private lateinit var nightDim: Switch
     private lateinit var mediaStatus: TextView
 
@@ -27,16 +28,26 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
 
         tickers = findViewById(R.id.tickers)
-        landscapeOnly = findViewById(R.id.landscape_only)
+        serviceOn = findViewById(R.id.service_on)
+        overlayStatus = findViewById(R.id.overlay_status)
         nightDim = findViewById(R.id.night_dim)
         mediaStatus = findViewById(R.id.media_status)
 
         tickers.setText(Prefs.rawTickers(this))
-        landscapeOnly.isChecked = Prefs.landscapeOnly(this)
+        serviceOn.isChecked = Prefs.serviceEnabled(this)
+        serviceOn.setOnCheckedChangeListener { _, on ->
+            Prefs.setServiceEnabled(this, on)
+            if (on) HubService.start(this) else HubService.stop(this)
+        }
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
         nightDim.isChecked = Prefs.nightDim(this)
 
-        findViewById<Button>(R.id.btn_dream).setOnClickListener {
-            open(Intent(Settings.ACTION_DREAM_SETTINGS))
+        findViewById<Button>(R.id.btn_overlay).setOnClickListener {
+            open(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         }
         findViewById<Button>(R.id.btn_access).setOnClickListener { openListenerSettings() }
         findViewById<Button>(R.id.btn_appinfo).setOnClickListener {
@@ -61,6 +72,10 @@ class MainActivity : Activity() {
         val ok = MediaWatcher.hasAccess(this)
         mediaStatus.text = if (ok) "✅ Accès autorisé : la musique en cours s'affichera."
         else "❌ Accès non autorisé : Spotify ne s'affichera pas."
+        val overlay = Settings.canDrawOverlays(this)
+        overlayStatus.text = if (overlay) "✅ Affichage par-dessus les autres applis autorisé."
+        else "❌ Autorise « Afficher par-dessus les autres applis » (obligatoire)."
+        if (Prefs.serviceEnabled(this)) HubService.start(this)
         showJournal()
     }
 
@@ -75,7 +90,6 @@ class MainActivity : Activity() {
 
     private fun save() {
         Prefs.setRawTickers(this, tickers.text.toString())
-        Prefs.setLandscapeOnly(this, landscapeOnly.isChecked)
         Prefs.setNightDim(this, nightDim.isChecked)
     }
 

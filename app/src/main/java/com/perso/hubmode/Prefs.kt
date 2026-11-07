@@ -34,6 +34,10 @@ object Prefs {
     fun setLandscapeOnly(ctx: Context, v: Boolean) =
         sp(ctx).edit().putBoolean("landscape_only", v).apply()
 
+    fun serviceEnabled(ctx: Context): Boolean = sp(ctx).getBoolean("service", true)
+    fun setServiceEnabled(ctx: Context, v: Boolean) =
+        sp(ctx).edit().putBoolean("service", v).apply()
+
     fun nightDim(ctx: Context): Boolean = sp(ctx).getBoolean("night_dim", true)
     fun setNightDim(ctx: Context, v: Boolean) =
         sp(ctx).edit().putBoolean("night_dim", v).apply()
