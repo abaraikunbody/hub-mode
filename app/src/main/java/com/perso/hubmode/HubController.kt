@@ -6,20 +6,23 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.BatteryManager
 import android.os.Handler
 import android.os.Looper
+import android.text.SpannableString
+import android.text.Spanned
 import android.text.TextUtils
+import android.text.style.ForegroundColorSpan
+import android.view.Gravity
+import android.animation.ValueAnimator
+import android.graphics.Bitmap
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -39,6 +42,10 @@ class HubController(
     private var running = false
 
     private val content: View = root.findViewById(R.id.content)
+    private val bg: View = root.findViewById(R.id.bg)
+    private var bgColor = Color.BLACK
+    private var lastArt: Bitmap? = null
+    private var bgAnim: ValueAnimator? = null
     private val battery: TextView = root.findViewById(R.id.battery)
     private val etfRow: LinearLayout = root.findViewById(R.id.etfs)
 
@@ -134,7 +141,7 @@ class HubController(
             val plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
             if (level < 0) return
             val pct = level * 100 / scale.coerceAtLeast(1)
-            battery.text = if (plugged) "⚡ $pct %  ·  en charge" else "$pct %"
+            battery.text = if (plugged) "·  ⚡ $pct %" else "·  $pct %"
         }
     }
 
@@ -145,7 +152,7 @@ class HubController(
         val controlsAlpha: Float
         when {
             !s.access -> {
-                appLabel.text = "Spotify"
+                appLabel.text = "SPOTIFY"
                 title.text = "Accès non autorisé"
                 artist.text = ""
                 hint.text = "Ouvre l'appli Hub Mode › « Autoriser l'accès aux notifications »"
@@ -155,7 +162,7 @@ class HubController(
                 controlsAlpha = 0.3f
             }
             !s.hasSession -> {
-                appLabel.text = "Spotify"
+                appLabel.text = "SPOTIFY"
                 title.text = "Rien en lecture"
                 artist.text = "Appuie sur ▶ pour reprendre"
                 hint.visibility = View.GONE
@@ -164,7 +171,7 @@ class HubController(
                 controlsAlpha = 1f
             }
             else -> {
-                appLabel.text = s.appName
+                appLabel.text = "EN LECTURE SUR " + s.appName.uppercase(Locale.FRANCE)
                 title.text = s.title.ifBlank { "Titre inconnu" }
                 artist.text = s.artist
                 hint.visibility = View.GONE
@@ -178,6 +185,7 @@ class HubController(
                 controlsAlpha = 1f
             }
         }
+        updateTint(if (s.access && s.hasSession) s.art else null)
         play.setImageResource(if (s.playing) R.drawable.ic_pause else R.drawable.ic_play)
         play.alpha = controlsAlpha
         prev.alpha = if (s.hasSession) 1f else 0.3f
@@ -199,6 +207,58 @@ class HubController(
         dur.text = fmtTime(s.duration)
     }
 
+    /** Fond teinté avec la couleur dominante de la pochette (assombrie pour l'OLED). */
+    private fun updateTint(art: Bitmap?) {
+        if (art === lastArt) return
+        lastArt = art
+        val target = if (art == null) Color.BLACK else dominantDark(art)
+        val accent = if (art == null) Color.rgb(124, 240, 168) else accentOf(target)
+        appLabel.setTextColor(accent)
+        bgAnim?.cancel()
+        bgAnim = ValueAnimator.ofArgb(bgColor, target).apply {
+            duration = 900
+            addUpdateListener {
+                bgColor = it.animatedValue as Int
+                bg.setBackgroundColor(bgColor)
+            }
+            start()
+        }
+    }
+
+    private fun dominantDark(src: Bitmap): Int {
+        val small = try {
+            Bitmap.createScaledBitmap(src.copy(Bitmap.Config.ARGB_8888, false), 24, 24, true)
+        } catch (_: Exception) {
+            return Color.BLACK
+        }
+        var r = 0L; var g = 0L; var b = 0L; var w = 0f
+        val hsv = FloatArray(3)
+        for (x in 0 until small.width) for (y in 0 until small.height) {
+            val c = small.getPixel(x, y)
+            Color.colorToHSV(c, hsv)
+            // On privilégie les pixels colorés, ni trop sombres ni trop clairs.
+            val weight = 0.15f + hsv[1] * (if (hsv[2] in 0.15f..0.95f) 1f else 0.2f)
+            r += (Color.red(c) * weight).toLong()
+            g += (Color.green(c) * weight).toLong()
+            b += (Color.blue(c) * weight).toLong()
+            w += weight
+        }
+        if (w <= 0f) return Color.BLACK
+        val avg = Color.rgb((r / w).toInt().coerceIn(0, 255), (g / w).toInt().coerceIn(0, 255), (b / w).toInt().coerceIn(0, 255))
+        Color.colorToHSV(avg, hsv)
+        hsv[1] = (hsv[1] * 1.2f).coerceAtMost(0.55f)
+        hsv[2] = 0.16f
+        return Color.HSVToColor(hsv)
+    }
+
+    private fun accentOf(dark: Int): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(dark, hsv)
+        hsv[1] = (hsv[1] * 0.9f).coerceIn(0.25f, 0.5f)
+        hsv[2] = 0.95f
+        return Color.HSVToColor(hsv)
+    }
+
     private fun fmtTime(ms: Long): String {
         val t = ms / 1000
         return String.format(Locale.FRANCE, "%d:%02d", t / 60, t % 60)
@@ -209,17 +269,14 @@ class HubController(
     private fun buildEtfCards() {
         etfRow.removeAllViews()
         cards.clear()
-        val list = Prefs.tickers(ctx)
-        list.forEachIndexed { index, t ->
+        Prefs.tickers(ctx).forEachIndexed { index, t ->
             val card = EtfCard(ctx, t)
-            val lp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            if (index > 0) lp.marginStart = ctx.dpi(12f)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            if (index > 0) lp.topMargin = ctx.dpi(6f)
             etfRow.addView(card.view, lp)
             cards.add(card)
-        }
-        // Une seule carte : on évite qu'elle soit trop large.
-        if (list.size == 1) {
-            etfRow.addView(View(ctx), LinearLayout.LayoutParams(0, 1, 0.6f))
         }
     }
 
@@ -257,81 +314,51 @@ class HubController(
     }
 }
 
-/** Carte d'un ETF : nom, cours, variation du jour, mini-courbe. */
+/** Ligne compacte d'un ETF (en haut à droite) : nom, cours et variation du jour. */
 private class EtfCard(private val ctx: Context, val ticker: Ticker) {
 
-    private val green = Color.rgb(30, 215, 96)
-    private val red = Color.rgb(255, 92, 92)
+    private val green = Color.rgb(124, 240, 168)
+    private val red = Color.rgb(255, 120, 120)
 
     val view = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
-        val p = ctx.dpi(14f)
-        setPadding(p + ctx.dpi(2f), p, p + ctx.dpi(2f), p)
-        background = GradientDrawable().apply {
-            cornerRadius = ctx.dp(22f)
-            setColor(Color.argb(23, 255, 255, 255))
-        }
+        gravity = Gravity.END
     }
 
-    private val name = text(13f, Color.argb(180, 255, 255, 255)).apply {
+    private val name = TextView(ctx).apply {
+        textSize = 12f
+        setTextColor(Color.argb(190, 255, 255, 255))
         text = ticker.label ?: ticker.symbol
         maxLines = 1
         ellipsize = TextUtils.TruncateAt.END
+        gravity = Gravity.END
     }
-    private val price = text(26f, Color.WHITE).apply {
+    private val line = TextView(ctx).apply {
+        textSize = 17f
+        setTextColor(Color.WHITE)
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        text = "—"
+        text = "…"
+        gravity = Gravity.END
     }
-    private val change = text(14f, Color.argb(180, 255, 255, 255))
-    private val spark = SparklineView(ctx)
-    private val status = text(11f, Color.argb(120, 255, 255, 255)).apply { text = "Chargement…" }
+    private var hasValue = false
 
     init {
         view.addView(name)
-        view.addView(price)
-        view.addView(change)
-        view.addView(
-            spark,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ctx.dpi(38f)).apply {
-                topMargin = ctx.dpi(6f)
-            }
-        )
-        view.addView(status, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = ctx.dpi(4f) })
-    }
-
-    private fun text(sp: Float, color: Int) = TextView(ctx).apply {
-        textSize = sp
-        setTextColor(color)
-        includeFontPadding = false
+        view.addView(line)
     }
 
     fun bind(q: Quote) {
         if (ticker.label == null) name.text = q.name
-        price.text = Quotes.formatPrice(q.price, q.currency)
+        val price = Quotes.formatPrice(q.price, q.currency)
+        val pct = String.format(Locale.FRANCE, "%+.2f %%", q.changePct)
+        val sb = SpannableString("$price  $pct")
         val col = if (q.changePct >= 0) green else red
-        change.text = Quotes.formatPct(q.changePct)
-        change.setTextColor(col)
-        spark.set(q.points, q.previousClose, col)
-        status.text = statusText(q.timeMillis)
+        sb.setSpan(ForegroundColorSpan(col), price.length + 2, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        line.text = sb
+        hasValue = true
     }
 
     fun error() {
-        status.text = if (price.text == "—") "Cours indisponible" else "Hors ligne · dernier cours affiché"
-    }
-
-    private fun statusText(t: Long): String {
-        if (t <= 0) return ""
-        val now = Calendar.getInstance()
-        val then = Calendar.getInstance().apply { timeInMillis = t }
-        val sameDay = now.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
-            now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
-        val fresh = System.currentTimeMillis() - t < 30 * 60_000L
-        return when {
-            fresh -> "En direct · " + SimpleDateFormat("HH:mm", Locale.FRANCE).format(Date(t))
-            sameDay -> "Clôture · " + SimpleDateFormat("HH:mm", Locale.FRANCE).format(Date(t))
-            else -> "Clôture · " + SimpleDateFormat("EEE d MMM", Locale.FRANCE).format(Date(t))
-        }
+        if (!hasValue) line.text = "indisponible"
     }
 }
