@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hub Mode"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:alpha="0.7"
+            android:text="Heure, date, Spotify et cours de bourse quand le téléphone est en charge et à l'horizontale." />
+
+        <!-- 1. Écran de veille -->
+        <TextView
+            style="@style/Section"
+            android:text="1. Activer l'écran de veille" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.7"
+            android:text="Choisis « Hub Mode » comme écran de veille, puis règle « Quand démarrer » sur « Pendant la charge »." />
+
+        <Button
+            android:id="@+id/btn_dream"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Ouvrir les réglages d'écran de veille" />
+
+        <!-- 2. Spotify -->
+        <TextView
+            style="@style/Section"
+            android:text="2. Autoriser Spotify" />
+
+        <TextView
+            android:id="@+id/media_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/btn_access"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Autoriser l'accès aux notifications" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:alpha="0.7"
+            android:text="Si l'option est grisée (« paramètre restreint ») : ouvre les infos de l'appli, menu ⋮ en haut à droite, puis « Autoriser les paramètres restreints », et réessaie." />
+
+        <Button
+            android:id="@+id/btn_appinfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Ouvrir les infos de l'appli" />
+
+        <!-- 3. ETF -->
+        <TextView
+            style="@style/Section"
+            android:text="3. Mes ETF / actions (3 max)" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.7"
+            android:text="Un par ligne, au format Yahoo Finance : SYMBOLE|Nom affiché. Exemples : DCAM.PA|PEA Monde · CW8.PA|MSCI World · ESE.PA|S&amp;P 500" />
+
+        <EditText
+            android:id="@+id/tickers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="top"
+            android:inputType="textMultiLine|textNoSuggestions|textCapCharacters"
+            android:minLines="3" />
+
+        <!-- 4. Options -->
+        <TextView
+            style="@style/Section"
+            android:text="4. Options" />
+
+        <Switch
+            android:id="@+id/landscape_only"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Seulement quand le téléphone est à l'horizontale (sinon l'écran s'éteint normalement)" />
+
+        <Switch
+            android:id="@+id/night_dim"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Atténuer l'affichage la nuit (22h – 7h)" />
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Enregistrer" />
+
+        <Button
+            android:id="@+id/btn_preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Aperçu" />
+    </LinearLayout>
+</ScrollView>
